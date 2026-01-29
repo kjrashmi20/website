@@ -7,17 +7,28 @@ pipeline {
     }
 
     stages {
-
-        /* ================= JOB 1 ================= */
+        /* Runs on BOTH develop and master */
         stage('Job1 - Build') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'master'
+                }
+            }
             steps {
                 echo "Building Docker image"
                 sh 'docker build -t $IMAGE_NAME .'
             }
         }
 
-        /* ================= JOB 2 ================= */
+        /* Runs on BOTH develop and master */
         stage('Job2 - Test') {
+            when {
+                anyOf {
+                    branch 'develop'
+                    branch 'master'
+                }
+            }
             steps {
                 echo "Testing application inside container"
                 sh '''
@@ -30,7 +41,7 @@ pipeline {
             }
         }
 
-        /* ================= JOB 3 ================= */
+        /* Runs ONLY on master */
         stage('Job3 - Prod') {
             when {
                 branch 'master'

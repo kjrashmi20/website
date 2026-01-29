@@ -2,57 +2,55 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_IMAGE = "yourdockerhubusername/website"
-        DOCKER_TAG   = "${BUILD_NUMBER}"
+        IMAGE_NAME = "abode-webapp"
+        CONTAINER_NAME = "abode-prod"
     }
 
     stages {
 
-        /* ---------------- JOB 1 : BUILD ---------------- */
+        /* ================= JOB 1 ================= */
         stage('Job1 - Build') {
             steps {
-                checkout scm
-                echo "Building for branch: ${env.BRANCH_NAME}"
-                docker.build("${DOCKER_IMAGE}:${DOCKER_TAG}")
+                echo "Building Docker image"
+                sh 'docker build -t $IMAGE_NAME .'
             }
         }
 
-        /* ---------------- JOB 2 : TEST ---------------- */
+        /* ================= JOB 2 ================= */
         stage('Job2 - Test') {
             steps {
-                echo "Running tests for branch: ${env.BRANCH_NAME}"
-                sh "echo 'Tests passed'"
+                echo "Testing application inside container"
+                sh '''
+                docker rm -f test-container || true
+                docker run -d --name test-container -p 8081:80 $IMAGE_NAME
+                sleep 10
+                curl -f http://localhost:8081
+                docker rm -f test-container
+                '''
             }
         }
 
-        /* ---------------- JOB 3 : PROD ---------------- */
-        stage('Job3 - Prod (Only Master)') {
+        /* ================= JOB 3 ================= */
+        stage('Job3 - Prod') {
             when {
                 branch 'master'
             }
             steps {
-                withCredentials([usernamePassword(
-                    credentialsId: 'dockerhub-creds',
-                    usernameVariable: 'DOCKER_USER',
-                    passwordVariable: 'DOCKER_PASS'
-                )]) {
-                    sh """
-                    echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                    docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                    docker tag ${DOCKER_IMAGE}:${DOCKER_TAG} ${DOCKER_IMAGE}:latest
-                    docker push ${DOCKER_IMAGE}:latest
-                    """
-                }
+                echo "Deploying to production"
+                sh '''
+                docker rm -f $CONTAINER_NAME || true
+                docker run -d --name $CONTAINER_NAME -p 80:80 $IMAGE_NAME
+                '''
             }
         }
     }
 
     post {
-        success {
-            echo "✅ SUCCESS for ${env.BRANCH_NAME}"
+        always {
+            echo "Pipeline completed"
         }
         failure {
-            echo "❌ FAILED for ${env.BRANCH_NAME}"
+            echo "Pipeline failed"
         }
     }
 }

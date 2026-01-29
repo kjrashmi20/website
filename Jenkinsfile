@@ -7,28 +7,19 @@ pipeline {
     }
 
     stages {
+
+        /* ================= JOB 1 ================= */
         stage('Job1 - Build') {
-            when {
-                expression { 
-                    return env.GIT_BRANCH == 'develop' || env.GIT_BRANCH == 'origin/develop' || 
-                           env.GIT_BRANCH == 'master'  || env.GIT_BRANCH == 'origin/master' 
-                }
-            }
             steps {
                 echo "Building Docker image"
-                sh "docker build -t ${IMAGE_NAME} ."
+                sh 'docker build -t $IMAGE_NAME .'
             }
         }
 
-        stage('Job2 - Tests') {
-            when {
-                expression { 
-                    return env.GIT_BRANCH == 'develop' || env.GIT_BRANCH == 'origin/develop' || 
-                           env.GIT_BRANCH == 'master'  || env.GIT_BRANCH == 'origin/master' 
-                }
-            }
+        /* ================= JOB 2 ================= */
+        stage('Job2 - Test') {
             steps {
-                echo "Testing application"
+                echo "Testing application inside container"
                 sh '''
                 docker rm -f test-container || true
                 docker run -d --name test-container -p 8081:80 $IMAGE_NAME
@@ -39,11 +30,10 @@ pipeline {
             }
         }
 
+        /* ================= JOB 3 ================= */
         stage('Job3 - Prod') {
             when {
-                expression { 
-                    return env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'origin/master' 
-                }
+                branch 'master'
             }
             steps {
                 echo "Deploying to production"
@@ -52,6 +42,15 @@ pipeline {
                 docker run -d --name $CONTAINER_NAME -p 80:80 $IMAGE_NAME
                 '''
             }
+        }
+    }
+
+    post {
+        always {
+            echo "Pipeline completed"
+        }
+        failure {
+            echo "Pipeline failed"
         }
     }
 }

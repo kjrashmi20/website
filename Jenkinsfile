@@ -20,7 +20,7 @@ pipeline {
             }
         }
 
-        stage('Job2 - Test') {
+        stage('Job2 - Tests') {
             when {
                 expression { 
                     return env.GIT_BRANCH == 'develop' || env.GIT_BRANCH == 'origin/develop' || 

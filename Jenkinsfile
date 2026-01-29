@@ -7,30 +7,23 @@ pipeline {
     }
 
     stages {
-        /* Runs on BOTH develop and master */
         stage('Job1 - Build') {
-            when {
-                anyOf {
-                    branch 'develop'
-                    branch 'master'
-                }
+            when { 
+                anyOf { branch 'develop'; branch 'master' } 
             }
             steps {
                 echo "Building Docker image"
-                sh 'docker build -t $IMAGE_NAME .'
+                // Using standard shell is safer and avoids the "script block" error
+                sh "docker build -t ${IMAGE_NAME} ."
             }
         }
 
-        /* Runs on BOTH develop and master */
         stage('Job2 - Test') {
-            when {
-                anyOf {
-                    branch 'develop'
-                    branch 'master'
-                }
+            when { 
+                anyOf { branch 'develop'; branch 'master' } 
             }
             steps {
-                echo "Testing application inside container"
+                echo "Testing application"
                 sh '''
                 docker rm -f test-container || true
                 docker run -d --name test-container -p 8081:80 $IMAGE_NAME
@@ -41,11 +34,8 @@ pipeline {
             }
         }
 
-        /* Runs ONLY on master */
         stage('Job3 - Prod') {
-            when {
-                branch 'master'
-            }
+            when { branch 'master' }
             steps {
                 echo "Deploying to production"
                 sh '''
@@ -53,15 +43,6 @@ pipeline {
                 docker run -d --name $CONTAINER_NAME -p 80:80 $IMAGE_NAME
                 '''
             }
-        }
-    }
-
-    post {
-        always {
-            echo "Pipeline completed"
-        }
-        failure {
-            echo "Pipeline failed"
         }
     }
 }

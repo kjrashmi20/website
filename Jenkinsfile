@@ -8,19 +8,24 @@ pipeline {
 
     stages {
         stage('Job1 - Build') {
-            when { 
-                anyOf { branch 'develop'; branch 'master' } 
+            when {
+                expression { 
+                    return env.GIT_BRANCH == 'develop' || env.GIT_BRANCH == 'origin/develop' || 
+                           env.GIT_BRANCH == 'master'  || env.GIT_BRANCH == 'origin/master' 
+                }
             }
             steps {
                 echo "Building Docker image"
-                // Using standard shell is safer and avoids the "script block" error
                 sh "docker build -t ${IMAGE_NAME} ."
             }
         }
 
         stage('Job2 - Test') {
-            when { 
-                anyOf { branch 'develop'; branch 'master' } 
+            when {
+                expression { 
+                    return env.GIT_BRANCH == 'develop' || env.GIT_BRANCH == 'origin/develop' || 
+                           env.GIT_BRANCH == 'master'  || env.GIT_BRANCH == 'origin/master' 
+                }
             }
             steps {
                 echo "Testing application"
@@ -35,7 +40,11 @@ pipeline {
         }
 
         stage('Job3 - Prod') {
-            when { branch 'master' }
+            when {
+                expression { 
+                    return env.GIT_BRANCH == 'master' || env.GIT_BRANCH == 'origin/master' 
+                }
+            }
             steps {
                 echo "Deploying to production"
                 sh '''

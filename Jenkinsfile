@@ -22,9 +22,9 @@ pipeline {
                 echo "Testing application inside container"
                 sh '''
                 docker rm -f test-container || true
-                docker run -d --name test-container -p 8081:80 $IMAGE_NAME
+                docker run -d --name test-container -p 8082:80 $IMAGE_NAME
                 sleep 10
-                curl -f http://localhost:8081
+                curl -f http://localhost:8082
                 docker rm -f test-container
                 '''
             }
